@@ -1,0 +1,72 @@
+<html>
+<head>
+<script type='text/javascript' src='require.js'></script>
+<script>
+requirejs.config({
+  paths: {
+    md5: "md5",
+    jiobase: 'jio',
+    jquery: 'jquery-1.9.1',
+    jio: 'xwikistorage'
+  },
+  shim: {
+    jiobase: ["md5"]
+  }
+});
+require(['jquery', 'jio'], function($, jio) {
+  // TODO: this is using jIO (global) rather than jio returned from
+  //       require() because xwikistorage is not setting it's xwikiurl
+  //       for cross-domain properly, this will be fixed.
+  var j = jIO.newJio({
+    "type": "xwiki",
+    "xwikiurl": "http://127.0.0.1:8080/xwiki"
+  });
+
+  j.get({_id:'Main/WebHome'},function(err, ret) {
+    if (err) { console.log(err); return; }
+    $('pre').remove();
+    $('#x').text(ret.content + "  (it works!)");
+  });
+});
+</script>
+</head>
+<body>
+<p id="x"></p>
+<pre>
+wget http://download.forge.objectweb.org/xwiki/xwiki-enterprise-jetty-hsqldb-5.0-rc-1.zip
+unzip ./xwiki-enterprise-jetty-hsqldb-5.0-rc-1.zip
+cd xwiki-enterprise-jetty-hsqldb-5.0-rc-1/webapps/xwiki/WEB-INF/lib
+wget http://repo1.maven.org/maven2/org/eclipse/jetty/jetty-servlets/8.1.9.v20130131/jetty-servlets-8.1.9.v20130131.jar
+wget http://repo1.maven.org/maven2/org/eclipse/jetty/jetty-util/8.1.9.v20130131/jetty-util-8.1.9.v20130131.jar
+cd ..
+
+echo '
+--- ./web.xml	2013-06-04 13:29:20.188026335 -0400
++++ ./web.xml	2013-06-18 03:33:45.969218244 -0400
+@@ -36,7 +36,16 @@
+       org.xwiki.rest.internal.XWikiRestletJaxRsApplication
+     &lt;/param-value>
+   &lt;/context-param> 
+-  
++
++    &lt;filter>
++        &lt;filter-name>cross-origin&lt;/filter-name>
++        &lt;filter-class>org.eclipse.jetty.servlets.CrossOriginFilter&lt;/filter-class>
++    &lt;/filter>
++    &lt;filter-mapping>
++        &lt;filter-name>cross-origin&lt;/filter-name>
++        &lt;url-pattern>/*&lt;/url-pattern>
++    &lt;/filter-mapping>
++
+   &lt;!-- Filter that sets a custom encoding to all requests, since usually clients don't specificy
+        the encoding used for submitting the request, so by default containers fall back to the
+        encoding globally configured in their settings. This allows XWiki to use a custom encoding,
+' | patch -p0
+
+cd ../../../
+
+./start_xwiki.sh
+
+</pre>
+</body>
+</html>
